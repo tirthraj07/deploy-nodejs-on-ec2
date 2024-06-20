@@ -361,3 +361,226 @@ Open your web browser and navigate to `http://IP`.
 You should see your Node.js application, indicating that Nginx is successfully proxying requests to your application running on port 3000.
 
 ![step10.6](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step24.png?raw=true)
+
+---
+### Step 11: Obtain SSL/TLS Certificate (Optional Step)
+
+You need to obtain a SSL/TLS Certificate inorder to use HTTPS instead of HTTP.
+
+Also we need to configure nginx such that, if the user visits __http__ then they should be redirect to __https__
+
+There are two approaches:
+1. __Using Let's Encrypt with a Domain Name__
+2. __Creating a Self-Signed Certificate__
+
+### 11.1 Using Let's Encrypt with a Domain Name
+For this step, you require a domain name because many Certificate Authorities, including `Let's Encrypt`, prefer or require a domain name to issue SSL/TLS certificates
+
+#### 1. Purchase a Domain Name: 
+You can buy a domain name from registrars like Namecheap, GoDaddy, or Google Domains
+
+#### 2. Point the Domain to Your Server:
+Set up an A record in your domain's DNS settings to point to your server's IP address. You can do this using __Amazon Route 53__
+
+#### 3. Complete the Configuration:
+
+##### 1. Install Certbot and the Nginx plugin
+Certbot will help you obtain and manage SSL/TLS certificates from Let's Encrypt:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+```
+
+##### 2. Obtain an SSL/TLS Certificate
+Obtain an SSL/TLS Certificate
+
+```bash 
+sudo certbot --nginx -d your_domain_or_IP
+```
+
+##### 3. Configure Nginx to Redirect HTTP to HTTPS
+Open the Nginx configuration file for your site:
+
+```bash
+sudo nano /etc/nginx/sites-available/nodeapp
+```
+
+Modify the configuration to include both the HTTP to HTTPS redirect and the HTTPS server block. Your updated configuration should look like this:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain_or_IP;
+
+    # Redirect all HTTP requests to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name your_domain_or_IP;
+
+    ssl_certificate /etc/letsencrypt/live/your_domain_or_IP/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your_domain_or_IP/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+Make sure to replace `your_domain_or_IP` with your actual domain name or IP address
+
+##### 4. Enable the Configuration and Restart Nginx
+
+```bash
+sudo ln -s /etc/nginx/sites-available/nodeapp /etc/nginx/sites-enabled/
+```
+
+##### 5. Test the Nginx configuration
+
+```bash
+sudo nginx -t
+```
+
+##### 6. If there are no errors, restart Nginx to apply the changes:
+```bash
+sudo systemctl restart nginx
+```
+
+##### 7. Adjust Firewall Rules (if necessary)
+```bash
+sudo ufw allow 'Nginx Full'
+```
+
+##### 8. Verify the setup
+Open your web browser and navigate to `http://your_domain`. You should be automatically redirected to `https://your_domain` and see your __Node.js application served securely__.
+
+---
+
+### 11.2 Creating a Self-Signed Certificate
+
+#### 1. Generate a Self-Signed Certificate:
+```bash
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+```
+  
+#### 2. Create a Strong Diffie-Hellman Group:
+```bash
+sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+```
+  
+#### 3. Configure Nginx for the Self-Signed Certificate:
+
+Create a new configuration file:
+
+```bash
+sudo nano /etc/nginx/snippets/self-signed.conf
+```
+
+Add the following configuration:
+
+```bash
+ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+```
+
+Create another configuration file for SSL settings:
+
+```bash
+sudo nano /etc/nginx/snippets/ssl-params.conf
+```
+
+Add the following configuration:
+
+```nginx
+ssl_protocols TLSv1.2;
+ssl_prefer_server_ciphers on;
+ssl_dhparam /etc/ssl/certs/dhparam.pem;
+ssl_ciphers 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256'; # Example cipher suite, adjust as necessary
+ssl_ecdh_curve secp384r1;
+ssl_session_timeout 10m;
+ssl_session_cache shared:SSL:10m;
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+```
+
+![step11.2.1](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step25.png?raw=true)
+
+#### 4. Modify the Nginx Configuration File:
+
+Edit your site configuration:
+
+```bash
+sudo nano /etc/nginx/sites-available/nodeapp
+```
+
+Update it to use the self-signed certificate:
+
+```nginx
+server {
+    listen 80;
+    server_name 52.87.198.144;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name 52.87.198.144;
+
+    include snippets/self-signed.conf;
+    include snippets/ssl-params.conf;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+![step11.2.2](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step26.png?raw=true)
+
+#### 5. Test and Restart Nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+#### 6. Adjust Firewall Rules (if necessary)
+Ensure that your firewall allows HTTPS traffic:
+
+```bash
+sudo ufw allow 'Nginx Full'
+```
+
+#### 7. Verification
+Open your web browser and navigate to `http://your_ip_address`. You should be automatically redirected to `https://your_ip_address`, and your Node.js application should be served securely. 
+
+
+![step11.2.3](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step27.png?raw=true)
+
+ 
+> Note that with a self-signed certificate, you'll receive a browser warning about the certificate not being trusted. This is normal and expected.
+> If you prefer to avoid browser warnings, consider obtaining a domain name and using Let's Encrypt to obtain a free, trusted SSL certificate.
+
+
+---
+
+There you go! You have successfully deployed your __Node JS__ project on __AWS EC2 Instance__ using __Nginx__
