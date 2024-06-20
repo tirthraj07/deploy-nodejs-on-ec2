@@ -59,3 +59,74 @@ This should connect you to the virtual machine.
 You can also connect to the instance using the ssh key we generated earlier (Optional)
 
 ![step4.3](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step12.png?raw=true)
+
+### Step 5: Update package list and install dependencies
+
+#### 1. Setup the EC2 instance
+
+```bash
+sudo apt update
+sudo apt upgrade
+```
+
+#### 2. Install NodeJS and npm
+Add the Node.js PPA (Personal Package Archive) to get the latest version of Node.js:
+
+```bash 
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+```
+
+Then install Node.js and npm:
+```
+sudo apt install nodejs -y
+```
+
+---
+
+Verify Installation of Node.js and npm
+
+Check Node.js version
+```bash
+node -v
+```
+Check npm version
+```bash
+npm -v
+```
+
+If npm is not installed for some reason, you can install it separately.
+```
+sudo apt install npm -y
+```
+
+---
+
+#### 3. Install Git
+You need to install git to bring your files into virtual machine.
+If you are going to `scp` (Secure copy protocol) for transferring your files, you can skip this step
+
+```bash
+sudo apt install git -y
+```
+
+### Step 6: Transfer the project files
+In this step, you need to transfer all the project files using either git or scp or any other mechanism
+
+For this example, I'll use git
+
+Navigate to the directory where you want to clone your project. For example, your home directory:
+
+```bash
+cd ~
+```
+
+Clone your repository
+
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+```
+Replace your-username and your-repo-name with your GitHub username and repository name respectively.
+
+![step6.1](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step13.png?raw=true)
+
+![step6.2](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step14.png?raw=true)
