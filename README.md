@@ -287,13 +287,17 @@ sudo systemctl start nginx
 sudo systemctl enable nginx
 ```
 
+![step10.1](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step19.png?raw=true)
+
+
 #### 3. Verify that Nginx is installed
 
 Go to the VM's public IP Address. You can find that in `network` of the instance dashboard
 
-![step10.1](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step19.png?raw=true)
-
 ![step10.2](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step20.png?raw=true)
+
+![step10.3](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step21.png?raw=true)
+
 
 If you see this, it means that nginx is installed correctly
 
@@ -322,7 +326,7 @@ server {
 }
 ```
 
-![step10.3](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step21.png?raw=true)
+![step10.4](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step22.png?raw=true)
 
 #### 5. Enable the Configuration
 
@@ -341,6 +345,19 @@ If there are no errors, restart Nginx to apply the changes:
 sudo systemctl restart nginx
 ```
 
-
-![step10.4](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step22.png?raw=true)
+#### 6. Adjust Firewall Rules
+Ensure that your firewall allows HTTPS traffic:
+```bash 
+sudo ufw allow 'Nginx Full'
+```
+  
+   
 ![step10.5](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step23.png?raw=true)
+
+
+#### 7. Verify the setup
+
+Open your web browser and navigate to `http://IP`. 
+You should see your Node.js application, indicating that Nginx is successfully proxying requests to your application running on port 3000.
+
+![step10.6](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step24.png?raw=true)
