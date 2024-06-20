@@ -583,4 +583,4 @@ Open your web browser and navigate to `http://your_ip_address`. You should be au
 
 ---
 
-There you go! You have successfully deployed your __Node JS__ project on __AWS EC2 Instance__ using __Nginx__
+There you go! You have successfully deployed your __Node JS__ project on __AWS EC2 Instance__ with __NGINX__ AND __SSL__
