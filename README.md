@@ -257,3 +257,90 @@ sudo systemctl status myapp.service
 ![step9.2](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step18.png?raw=true)
 
 ---
+
+### Step 10: Set Up a Reverse Proxy with Nginx
+
+A __reverse proxy__ is a server that __sits between client devices and web servers__, forwarding client requests to the appropriate server. 
+
+When a client sends a request to a website, the reverse proxy __intercepts__ this request and forwards it to the backend server (in this case, the Node.js application running on port 3000). 
+
+The backend server processes the request and sends the response back to the reverse proxy, which then forwards it to the client.
+
+Why a reverse proxy is commonly used and why the Node.js application was not directly run on ports 80 or 443:
+
+1. On many operating systems, binding to ports below 1024 (such as 80 and 443) requires elevated privileges (root access)
+2. A reverse proxy can distribute incoming requests across multiple instances of the Node.js application, improving load balancing and allowing the system to scale horizontally
+3. Running the application behind a reverse proxy helps isolate it from direct exposure to the internet. This provides an additional layer of security.
+
+A reverse proxy like Nginx or Apache is more efficient at handling a large number of incoming requests, static content, and SSL/TLS encryption.
+
+In this tutorial, I'll use `Nginx` for reverse proxy
+  
+#### 1. Install Nginx
+```bash
+sudo apt install nginx
+```
+
+#### 2. Start and Enable Nginx
+```bash
+sudo systemctl start nginx
+sudo systemctl enable nginx
+```
+
+#### 3. Verify that Nginx is installed
+
+Go to the VM's public IP Address. You can find that in `network` of the instance dashboard
+
+![step10.1](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step19.png?raw=true)
+
+![step10.2](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step20.png?raw=true)
+
+If you see this, it means that nginx is installed correctly
+
+#### 4. Configure Nginx as a Reverse Proxy
+Create a new configuration file for your Node.js application. You can place this file in the `/etc/nginx/sites-available` directory. For example, create a file called `nodeapp`
+
+```bash
+sudo nano /etc/nginx/sites-available/nodeapp
+```
+
+Add the following configuration to the file:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain_or_IP;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+![step10.3](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step21.png?raw=true)
+
+#### 5. Enable the Configuration
+
+Create a symbolic link to enable the configuration:
+```bash
+sudo ln -s /etc/nginx/sites-available/nodeapp /etc/nginx/sites-enabled/
+```
+
+Test the Nginx configuration for syntax errors:
+```bash
+sudo nginx -t
+```
+
+If there are no errors, restart Nginx to apply the changes:
+```bash
+sudo systemctl restart nginx
+```
+
+
+![step10.4](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step22.png?raw=true)
+![step10.5](https://github.com/tirthraj07/deploy-nodejs-on-ec2/blob/main/public/step23.png?raw=true)
